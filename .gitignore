@@ -1,0 +1,10 @@
+*~
+_build/
+*.byte
+*.exe
+*.hi
+*.native
+*.o
+*.out
+*.swp
+*.swo
