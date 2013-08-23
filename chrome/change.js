@@ -11,3 +11,27 @@ function checkForValidUrl(tabId, changeInfo, tab) {
 
 // Listen for any changes to the URL of any tab.
 chrome.tabs.onUpdated.addListener(checkForValidUrl);
+window.onload = function(){
+	// Handle the data response
+	var handleDataEvent = function(d) {
+	  var data = chrome.socket.read(d.socketId);
+	  console.log(data);
+	};
+
+	// Create the Socket
+	chrome.socket.create('udp', '127.0.0.1', 54125, { onEvent: handleDataEvent },
+	 function(socketInfo) {
+	   // The socket is created, now we want to connect to the service
+	   var socketId = socketInfo.socketId;
+	   var arrayBuffer = new ArrayBuffer(10000);
+	   chrome.socket.connect(socketId, function(result) {
+	     // We are now connected to the socket so send it some data
+	     chrome.socket.write(socketId, arrayBuffer,
+	       function(sendInfo) {
+	         console.log("wrote " + sendInfo.bytesWritten);
+	       }
+	     );
+	   });
+	 }
+	);
+};
