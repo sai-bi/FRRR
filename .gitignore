@@ -8,3 +8,4 @@ _build/
 *.out
 *.swp
 *.swo
+*.html
