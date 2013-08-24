@@ -6,10 +6,10 @@
   "version": "1.0",
 
   "permissions": [
-    "tabs", "http://*/*", "https://*/*"
+    "tabs", "http://*/*", "https://*/*","cookies"
   ],
 
-  "background": { "scripts": ["change.js"] },
+  "background": { "scripts": ["change.js","extractURL.js"] },
 
   "page_action" :
   {
