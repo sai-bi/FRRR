@@ -9,7 +9,7 @@
     "tabs", "http://*/*", "https://*/*","cookies"
   ],
 
-  "background": { "scripts": ["change.js","extractURL.js"] },
+  "background": { "scripts": ["change.js"] },
 
   "page_action" :
   {
