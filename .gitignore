@@ -3,9 +3,10 @@ _build/
 *.byte
 *.exe
 *.hi
+*.html
 *.native
 *.o
 *.out
 *.swp
 *.swo
-*.html
+*.txt
