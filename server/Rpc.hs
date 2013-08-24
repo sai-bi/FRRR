@@ -29,7 +29,7 @@ data Response =
   | Working Int
   | Result (Int, String)
 
-data Job = Job
+data Job= Job
   { jobHandle      :: Handle
   , jobToken       :: Int
   , jobHandler     :: String -> IO String
@@ -55,15 +55,6 @@ instance ToSexp Response where
 
 newtype Implementations = Implementations
   { getImplementations :: Map.Map String (String -> IO String) }
-
-data Client = Client
-  { whenConnected :: ClockTime
-  }
-
-data Server = Server
-  { whenStarted :: ClockTime
-  , servClients :: [Client]
-  }
 
 implement :: (Read a, ToSexp b) =>
   String -> (a -> IO b) -> (String, String -> IO String)
@@ -200,12 +191,30 @@ serveClient implementations jobQueue handle = do
   _ <- forkIO $ writer jobQueue outQueue handle
   return ()
 
+response :: String
+response =
+  "HTTP/1.1 200 OK\n\
+  \Content-Length: 22\n\
+  \Connection: keep-alive\n\
+  \Content-Type: text/html\n\
+  \Access-Control-Allow-Origin: *\n\
+  \\n\
+  \{ \"number\": 68446400 }"
+
+echo handle host port = do
+  msg <- hGetLine handle
+  putStrLn $ "Received from " ++ show host ++ " via port " ++ show port ++ ":\n" ++ show msg ++ "\n"
+  hPutStrLn handle response
+  echo handle host port
+
 acceptLoop :: Implementations -> Socket -> TChan Job-> IO ()
 acceptLoop implementations sock jobQueue =
   forever $ do
-    (handle, _host, _port) <- accept sock
+    (handle, host, port) <- accept sock
     hSetBuffering handle NoBuffering
-    _ <- forkIO $ serveClient implementations jobQueue handle
+    putStrLn $ "Accepted " ++ show host ++ " on port " ++ show port ++ "\n"
+    --_ <- forkIO $ serveClient implementations jobQueue handle
+    _ <- forkIO $ echo handle host port
     return ()
 
 -- | Start an RPC server.
