@@ -34,7 +34,7 @@ def define_request page, id, cookie
       #'DNT'             => '1',
       #'Accept-Language' => 'en-US,en;q=0.8',
       'Cookie'           => cookie
-  }
+    }
   )
 end
 
