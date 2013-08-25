@@ -22,7 +22,7 @@ def define_request page, id, cookie
       'User-Agent'      => 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/29.0.1547.57 Safari/537.36',
       'DNT'             => '1',
       'Accept-Language' => 'en-US,en;q=0.8',
-      'Cookie'           => cookie
+      'Cookie'          => cookie
     }
   )
 end
