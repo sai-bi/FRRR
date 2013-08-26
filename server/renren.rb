@@ -113,12 +113,13 @@ module Renren
       new_url = uri.to_s
 
       acc << { photo_id: photo["photoId"].to_i,
-        caption: photo["title"],
-        time:    photo["time"],
-        old_url: old_url,
-        new_url: new_url
-      }
-
+               user_id:  user_id,
+               album_id: album_id,
+               caption: photo["title"],
+               time:    photo["time"],
+               old_url: old_url,
+               new_url: new_url
+             }
     end
   end
 
@@ -136,7 +137,15 @@ module Renren
     (get_album cookie, user_id, album_id).each do |photo|
       puts photo
       photo_id = photo[:photo_id]
-      (agent.get photo[:new_url]).save! "photo-#{photo_id}.jpg"
+
+      begin
+        (agent.get photo[:new_url]).save! "photo-#{photo_id}.jpg"
+      rescue Timeout::Error
+        sleep 30
+        download_album cookie, user_id, album_id
+        next
+      end
+
     end
 
     FileUtils.cd anchor
