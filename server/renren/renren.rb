@@ -19,7 +19,7 @@ module Renren
     end
   end
 
-  def headers cookie
+  def make_headers cookie
     { 'Connection'      => 'keep-alive',
       'Accept'          => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
       'User-Agent'      => 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/29.0.1547.57 Safari/537.36',
@@ -29,12 +29,12 @@ module Renren
     }
   end
 
-  def get_friend_list cookie, user_id
+  def list_friends cookie, user_id
     # Determine last_page, i.e., the number of pages of friend list
     response = Typhoeus.get(
       'http://friend.renren.com/GetFriendList.do',
       params: { curpage: 0, id: user_id },
-      headers: (headers cookie)
+      headers: (make_headers cookie)
     )
     doc = Nokogiri::HTML response.body
     last_page = ((doc.css 'div#topPage.page a')[-1]['href'].scan /\d+/)[0].to_i
@@ -47,7 +47,7 @@ module Renren
       Typhoeus::Request.new(
         'http://friend.renren.com/GetFriendList.do',
         params: { curpage: page, id: user_id },
-        headers: (headers cookie)
+        headers: (make_headers cookie)
       )
     end
 
@@ -72,14 +72,14 @@ module Renren
     end).flatten 1
   end
 
-  def get_my_friend_list cookie
-    get_friend_list cookie, (parse_cookie cookie)['id']
+  def list_my_friends cookie
+    list_friends cookie, (parse_cookie cookie)['id']
   end
 
-  def get_album_list cookie, user_id
+  def list_albums cookie, user_id
     response = Typhoeus.get(
       "http://photo.renren.com/photo/#{user_id}/album/relatives",
-      headers: (headers cookie)
+      headers: (make_headers cookie)
     )
 
     doc = Nokogiri::HTML response.body
@@ -96,7 +96,7 @@ module Renren
 
   # Takes an original image url and returns an array of urls (with the original
   # one included of course), which should be attempted in the same order
-  def make_urls url
+  def make_backup_urls url
     interchangeable_hosts = ['fmn.rrimg.com', 'fmn.rrfmn.com', 'fmn.xnpic.com']
     uri = URI url
     if interchangeable_hosts.include? uri.host
@@ -110,10 +110,10 @@ module Renren
   end
 
   # The desired album must not be private.
-  def get_album cookie, user_id, album_id
+  def list_photos cookie, user_id, album_id
     response = Typhoeus.get(
       "http://photo.renren.com/photo/#{user_id}/album-#{album_id}/bypage/ajax?curPage=0&pagenum=#{2**31-1}",
-      headers: (headers cookie)
+      headers: (make_headers cookie)
     )
 
     (JSON.parse response.body)['photoList'].inject([]) do |acc, photo|
@@ -123,43 +123,57 @@ module Renren
         album_id: album_id,
         caption:  photo['title'],
         time:     photo['time'],
-        urls:     (make_urls photo['largeUrl'])
+        urls:     (make_backup_urls photo['largeUrl'])
       }
     end
   end
 
+  def make_album_path user_id, album_id
+    "user-#{user_id}/album-#{album_id}"
+  end
+
+  def make_photo_path user_id, album_id, photo_id
+    "#{make_album_path user_id, album_id}/photo-#{photo_id}.jpg"
+  end
+
   # The desired album must not be private.
   def download_album cookie, user_id, album_id
-    where = FileUtils.pwd
-
-    path = "user-#{user_id}/album-#{album_id}"
-    FileUtils.mkdir_p path
-    FileUtils.cd path
+    album_path = make_album_path user_id, album_id
+    FileUtils.mkdir_p album_path
 
     agent = Mechanize.new
 
-    photos = get_album cookie, user_id, album_id
+    photos = list_photos cookie, user_id, album_id
     photos.each do |photo|
-      puts photo
       photo_id = photo[:photo_id]
 
       photo[:urls].each do |url|
+        retry_count = 0
+
         begin
-          agent.download url, "photo-#{photo_id}.jpg"
+          agent.download url, (make_photo_path user_id, album_id, photo_id)
 
-        rescue Mechanize::ResponseCodeError
-          next
+        rescue Mechanize::ResponseCodeError, Mechanize::ResponseReadError, Net::HTTP::Persistent::Error
+          if retry_count < 1
+            retry_count += 1
+            agent.shutdown
+            sleep 10
+            agent = Mechanize.new
+            retry
+          else
+            next
+          end
 
-        # Rescue 'Content-Length does not match response body length'
-        rescue Mechanize::ResponseReadError
-          next
+        # Raise all exceptions within StandardError
+        rescue
+          $stderr.puts photo
+          raise
 
+        # Proceed to next photo if nothing bad happens
         else
           break
         end
       end
     end
-
-    FileUtils.cd where
   end
 end
