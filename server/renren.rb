@@ -6,9 +6,7 @@ require 'nokogiri'
 require 'json'
 require 'uri'
 
-# I don't get object-oriented programming.
 module Renren
-
   # Parse a cookie (as string) into a Ruby hash
   def Renren.parse_cookie cookie
     (cookie.split "; ").inject({}) do |acc, item|
@@ -29,7 +27,6 @@ module Renren
   end
 
   def Renren.get_friend_list cookie, user_id
-
     # Determine last_page, i.e., the number of pages of friend list
     response = Typhoeus.get(
       "http://friend.renren.com/GetFriendList.do",
@@ -70,7 +67,6 @@ module Renren
       end
 
     end).flatten 1
-
   end
 
   def Renren.get_my_friend_list cookie
@@ -95,6 +91,7 @@ module Renren
     end
   end
 
+  # The desired album must not be private.
   def Renren.get_album cookie, user_id, album_id
     response = Typhoeus.get(
       "http://photo.renren.com/photo/#{user_id}/album-#{album_id}/bypage/ajax?curPage=0&pagenum=#{2**31-1}",
@@ -103,29 +100,29 @@ module Renren
 
     (JSON.parse response.body)["photoList"].inject([]) do |acc, photo|
 
-      old_url = photo["largeUrl"]
+      backup_url = photo["largeUrl"]
 
       # Replace slow host: "fmn.xnpic.com"
-      uri = URI old_url
+      uri = URI backup_url
       if uri.host == "fmn.xnpic.com"
         uri.host = "fmn.rrimg.com"
       end
-      new_url = uri.to_s
+      url = uri.to_s
 
-      acc << { photo_id: photo["photoId"].to_i,
-               user_id:  user_id,
-               album_id: album_id,
-               caption: photo["title"],
-               time:    photo["time"],
-               old_url: old_url,
-               new_url: new_url
-             }
+      acc <<
+      { photo_id:   photo["photoId"].to_i,
+        user_id:    user_id,
+        album_id:   album_id,
+        caption:    photo["title"],
+        time:       photo["time"],
+        url:        url,
+        backup_url: backup_url
+      }
     end
   end
 
-  # The desired album to download must not be private.
+  # The desired album must not be private.
   def Renren.download_album cookie, user_id, album_id
-
     anchor = FileUtils.pwd
 
     path = "user-#{user_id}/album-#{album_id}"
@@ -134,21 +131,51 @@ module Renren
 
     agent = Mechanize.new
 
-    (get_album cookie, user_id, album_id).each do |photo|
+    photos = get_album cookie, user_id, album_id
+    photos.each do |photo|
       puts photo
       photo_id = photo[:photo_id]
 
+      use_backup_url = false
+      retry_count = 0
       begin
-        (agent.get photo[:new_url]).save! "photo-#{photo_id}.jpg"
-      rescue Timeout::Error
-        sleep 30
-        download_album cookie, user_id, album_id
-        next
-      end
+        if use_backup_url
+          (agent.get photo[:backup_url]).save! "photo-#{photo_id}.jpg"
+        else
+          (agent.get photo[:url]).save! "photo-#{photo_id}.jpg"
+        end
 
+      # Retry using backup url. Give up if it also doesn't work.
+      # http://mechanize.rubyforge.org/Mechanize/ResponseCodeError.html
+      rescue Mechanize::ResponseCodeError => e
+        if use_backup_url
+          # Skip
+        else
+          if e.response_code == 404
+            use_backup_url = true
+          end
+          agent.shutdown
+          sleep (15 * 4**retry_count)
+          agent = Mechanize.new
+          retry_count += 1
+          retry
+        end
+
+      # Rescue 'Content-Length does not match response body length'
+      # http://mechanize.rubyforge.org/Mechanize/ResponseReadError.html
+      rescue Mechanize::ResponseReadError
+        if retry_count > 2
+          # Skip
+        else
+          agent.shutdown
+          sleep (15 * 4**retry_count)
+          agent = Mechanize.new
+          retry_count += 1
+          retry
+        end
+      end # Rescue block
     end
 
     FileUtils.cd anchor
   end
-
 end
