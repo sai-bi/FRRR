@@ -4,8 +4,8 @@ renren.md
 resources
 log
 test
-server/renren/remote
-server/renren/src/download_albums.rb
+renren/remote
+renren/src/download_albums.rb
 
 ### Haskell ###
 dist
