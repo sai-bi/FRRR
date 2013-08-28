@@ -1,8 +1,9 @@
 ### Project-specific ###
 .DS_Store
+renren.md
 resources
 log
-server/detect
+test
 server/renren/remote
 server/renren/src/download_albums.rb
 
