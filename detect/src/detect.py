@@ -24,6 +24,7 @@ def detect_faces(image, face_cascade):
     haar_flags    = 0
 
     # Allocate temporary images
+
     grayscale  = cv.CreateImage((image.width, image.height), 8, 1)
     small_image = cv.CreateImage(
                       (cv.Round (image.width  / image_scale),
@@ -31,33 +32,41 @@ def detect_faces(image, face_cascade):
                   ), 8, 1)
 
     # Convert input color image to grayscale
+
     cv.CvtColor(image, grayscale, cv.CV_BGR2GRAY)
 
     # Scale input image for faster processing
+
     cv.Resize(grayscale, small_image, cv.CV_INTER_LINEAR)
 
     # Equalize histogram
+
     cv.EqualizeHist(small_image, small_image)
 
     # Detect faces
+
     faces = cv.HaarDetectObjects(
                 small_image, face_cascade, cv.CreateMemStorage(0),
                 haar_scale, min_neighbors, haar_flags, min_size
             )
 
     # If faces are found
+
     acc = []
     if faces:
         for ((x, y, w, h), n) in faces:
             # The input to cv.HaarDetectObjects was resized, so the stairs
             # Bounding box of each face and convert it to two CvPoints
+
             acc += map(lambda x: x * image_scale, [x, y, w, h])
 
     return acc
 
 def detect(url):
 
-    face_cascade = cv.Load('../resources/haarcascade_frontalface_alt.xml')
+    # Since pwd inherits from parent process, relative path usually won't work.
+
+    face_cascade = cv.Load('/home/zshi/Dropbox/Dev/zhiyuanshi/frrr/detect/resources/haarcascade_frontalface_alt.xml')
     img_file = urllib2.urlopen(url)
 
     im = StringIO(img_file.read())

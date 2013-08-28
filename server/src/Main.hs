@@ -1,24 +1,25 @@
 {-# LANGUAGE OverloadedStrings #-}
+
 module Main where
 
-import           Control.Applicative
+import           Control.Monad.IO.Class (liftIO)
+import qualified Data.ByteString.Char8 as B
+import           System.Process (readProcess)
+
 import           Snap.Core
-import           Snap.Util.FileServe
 import           Snap.Http.Server
 
 main :: IO ()
 main = quickHttpServe site
 
 site :: Snap ()
-site =
-    ifTop (writeBS "hello world") <|>
-    route [ ("foo", writeBS "bar")
-          , ("echo/:echoparam", echoHandler)
-          ] <|>
-    dir "static" (serveDirectory ".")
+site = route [("detect/:url", detect)]
 
-echoHandler :: Snap ()
-echoHandler = do
-    param <- getParam "echoparam"
-    maybe (writeBS "must specify echo/param in URL")
-          writeBS param
+detect :: Snap ()
+detect = do
+  maybeUrl <- getParam "url"
+  case maybeUrl of
+    Nothing  -> writeBS ""
+    Just url -> do
+      faces <- liftIO $ readProcess "../detect/src/detect.py" [] (B.unpack url)
+      writeBS $ B.pack faces
