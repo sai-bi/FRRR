@@ -5,6 +5,7 @@ require 'typhoeus'
 require 'nokogiri'
 require 'json'
 require 'uri'
+require 'mysql2'
 
 module Renren
   # All functions below are exposed
@@ -63,10 +64,13 @@ module Renren
       friends = doc.css 'ol#friendListCon li div.info dl'
 
       friends.inject([]) do |acc, friend|
-        name    = friend.css('dd')[0].text.strip
         user_id = friend.css('dd a')[0]['href'].scan(/\d+/)[0].to_i
-        network = friend.css('dd')[1].text
-        acc << { name: name, network: network, user_id: user_id}
+        name    = friend.css('dd')[0].text.strip
+        network = friend.css('dd')[1].text.strip
+        acc << { user_id: user_id,
+                 name:    name,
+                 network: network
+               }
       end
 
     end).flatten 1
@@ -84,9 +88,9 @@ module Renren
 
     doc = Nokogiri::HTML response.body
     (doc.css 'div.album-list.othter-album-list a.album-title').map do |album|
-      { title:    (album.css 'span.album-name').text.strip,
-        user_id:  user_id,
+      { user_id:  user_id,
         album_id: (album['href'].scan /\d+/)[1].to_i,
+        title:    (album.css 'span.album-name').text.strip,
         # A <span> tag of class 'password' differentiates a private album
         # from a public one. The latter does not have one.
         private: !(album.css 'span.album-name span.password').empty?
@@ -116,7 +120,12 @@ module Renren
       headers: (make_headers cookie)
     )
 
-    (JSON.parse response.body)['photoList'].inject([]) do |acc, photo|
+    photo_list = (JSON.parse response.body)['photoList']
+
+    client = Mysql2::Client.new host:'localhost', username:'frrr'
+    client.query 'use renren'
+
+    photo_list.inject([]) do |acc, photo|
       if photo['largeUrl'] == ''
         # Actually, this case has happened and caused Mechanize agent to crash.
         #
@@ -127,14 +136,25 @@ module Renren
         # In this case, we just ignore such missing photo.
         acc
       else
-        acc <<
-        { photo_id: photo['photoId'].to_i,
-          user_id:  user_id,
-          album_id: album_id,
-          caption:  photo['title'],
-          time:     photo['time'],
-          urls:     (make_backup_urls photo['largeUrl'])
-        }
+        user_id  = user_id
+        album_id = album_id
+        photo_id = photo['photoId'].to_i
+        caption  = photo['title'].strip
+        time     = photo['time'].strip
+        urls     = (make_backup_urls photo['largeUrl']).strip
+
+        client.query "replace into "\
+                     "photos (user_id, album_id, photo_id, caption, url, cached_faces) "\
+                     "values (#{user_id}, #{album_id}, #{photo_id}, '#{client.escape caption}', '#{client.escape urls[0]}', '')"
+
+        acc << { user_id: user_id,
+                 album_id: album_id,
+                 photo_id: photo_id,
+                 caption: caption,
+                 time: time,
+                 urls: urls
+               }
+
       end
     end
   end
@@ -156,7 +176,7 @@ module Renren
 
     photos = list_photos cookie, user_id, album_id
     photos.each do |photo|
-      photo_id = photo[:photo_id]
+      photo_id = photo[:id]
       download_sucess = false
 
       photo[:urls].each do |url|

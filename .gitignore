@@ -1,7 +1,10 @@
+### General ###
+*.swp
+
 ### Project-specific ###
 .DS_Store
 renren.md
-resources
+assets
 log
 test
 renren/remote

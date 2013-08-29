@@ -10,10 +10,10 @@ import           Snap.Core
 import           Snap.Http.Server
 
 main :: IO ()
-main = quickHttpServe site
+main = quickHttpServe app
 
-site :: Snap ()
-site = route [("detect/:url", detect)]
+app :: Snap ()
+app = route [("detect/:url", detect)]
 
 detect :: Snap ()
 detect = do

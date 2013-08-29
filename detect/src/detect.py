@@ -18,7 +18,7 @@ import math
 def detect_faces(image, face_cascade):
 
     min_size      = (20, 20)
-    image_scale   = 1 # <- 2
+    image_scale   = 1
     haar_scale    = 1.1
     min_neighbors = 3
     haar_flags    = 0
@@ -64,9 +64,8 @@ def detect_faces(image, face_cascade):
 
 def detect(url):
 
-    # Since pwd inherits from parent process, relative path usually won't work.
-
-    face_cascade = cv.Load('/home/zshi/Dropbox/Dev/zhiyuanshi/frrr/detect/resources/haarcascade_frontalface_alt.xml')
+    # Path is relative to the caller, not the current file location.
+    face_cascade = cv.Load('../detect/assets/haarcascade_frontalface_alt2.xml')
     img_file = urllib2.urlopen(url)
 
     im = StringIO(img_file.read())
