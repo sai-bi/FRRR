@@ -1,15 +1,16 @@
 ### General ###
-*.swp
 tmp
+log
+*.swp
+*.log
 
 ### Project-specific ###
-.DS_Store
-renren.md
 assets
-log
 test
 renren/remote
 detect/haarcascades
+.DS_Store
+renren.md
 
 ### Haskell ###
 dist
