@@ -58,14 +58,23 @@ def detect_faces(image, face_cascade):
             # The input to cv.HaarDetectObjects was resized, so the stairs
             # Bounding box of each face and convert it to two CvPoints
 
-            acc += map(lambda x: x * image_scale, [x, y, w, h])
+            acc += [a * image_scale for a in [x, y, w, h]]
 
     return acc
 
-def detect(url):
+def main(url):
 
     # Path is relative to the caller, not the current file location.
-    face_cascade = cv.Load('../detect/assets/haarcascade_frontalface_alt2.xml')
+    cascade_files = [
+            #'../detect/haarcascades/haarcascade_frontalface_default.xml',
+            '../detect/haarcascades/haarcascade_frontalface_alt.xml',
+            #'../detect/haarcascades/haarcascade_frontalface_alt2.xml',
+            '../detect/haarcascades/haarcascade_profileface.xml',
+            #'../detect/haarcascades/haarcascade_eyes.xml',
+            #'../detect/haarcascades/frontalEyes35x16.xml'
+            ]
+    cascades = [cv.Load(f) for f in cascade_files]
+
     img_file = urllib2.urlopen(url)
 
     im = StringIO(img_file.read())
@@ -74,11 +83,11 @@ def detect(url):
     cv.SetData(bitmap, source.tostring())
     cv.CvtColor(bitmap, bitmap, cv.CV_RGB2BGR)
 
-    faces = detect_faces(bitmap, face_cascade)
+    faces = reduce(lambda acc, x: acc + detect_faces(bitmap, x), cascades, [])
 
     return faces
 
 if __name__ == '__main__':
     url = raw_input()
-    faces = detect(url)
+    faces = main(url)
     print ','.join([str(i) for i in faces])

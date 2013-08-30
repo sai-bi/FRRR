@@ -1,6 +1,6 @@
 ### General ###
-tmp
 *.swp
+tmp
 
 ### Project-specific ###
 .DS_Store
@@ -9,13 +9,12 @@ assets
 log
 test
 renren/remote
-renren/src/download_albums.rb
 detect/haarcascades
 
 ### Haskell ###
 dist
-*.o
 *.hi
+*.o
 
 ### Python ###
 *.pyc
