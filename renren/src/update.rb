@@ -68,12 +68,13 @@ module Update
 
       clear_print "  #{i} of #{users_count} [Updating database] #{user['name']}"
 
-      user_id  = user['user_id']
-      album_id = album[:album_id]
-      title    = conn.escape album[:title]
-      private_ = album[:private] ? 'true' : 'false'
-
       albums.each_with_index do |album, i|
+
+        user_id  = user['user_id']
+        album_id = album[:album_id]
+        title    = conn.escape album[:title]
+        private_ = album[:private] ? 'true' : 'false'
+
         conn.query \
           "replace into
            albums (user_id, album_id, title, private)
@@ -169,7 +170,7 @@ end
 def test
   cookie = gets
   conn = Mysql2::Client.new host:'localhost', username:'frrr'
-  Update::update_photos cookie, conn, '/media/Passport/frrr/renren-photos'
+  Update::update_albums cookie, conn#, '/media/Passport/frrr/renren-photos'
 end
 
 test
