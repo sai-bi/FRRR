@@ -2,7 +2,7 @@ create database renren;
 
 drop   user 'frrr'@'localhost';
 create user 'frrr'@'localhost';
-grant select, insert, delete on renren.* to 'frrr'@'localhost';
+grant select, insert, update, delete on renren.* to 'frrr'@'localhost';
 flush privileges;
 
 use renren;
