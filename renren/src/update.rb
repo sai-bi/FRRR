@@ -2,6 +2,7 @@
 
 require 'fileutils'
 require 'mysql2'
+require 'json'
 require_relative 'renren'
 
 def clear_print s
@@ -96,6 +97,7 @@ module Update
       clear_print '  Retrieving albums'
       albums = conn.query 'select * from albums'
       albums_count = (conn.query 'select count(*) from albums').first['count(*)']
+      failure_count = 0
       clear_print "  Retrieved #{albums_count} albums\n"
 
       albums.each_with_index do |album, i|
@@ -115,17 +117,26 @@ module Update
 
         next if album['private'] == 1
 
-        clear_print "  #{i} of #{albums_count} [Fetching photos] #{album['title']}"
-        photos = Renren::list_photos cookie, album['user_id'], album['album_id']
+        clear_print "  #{i} of #{albums_count} (#{failure_count} failed) [Fetching photos] #{album['title']}"
+
+        begin
+          photos = Renren::list_photos cookie, album['user_id'], album['album_id']
+        # list_photos parses a JSON page, which sometimes goes wrong.
+        rescue JSON::ParserError
+          failure_count += 1
+          sleep 60
+          next
+        end
+
         photos_count += photos.length
 
-        clear_print "  #{i} of #{albums_count} [Checking local files] #{album['title']}"
+        #clear_print "  #{i} of #{albums_count} (#{failure_count} failed) [Checking local files] #{album['title']}"
         album_path = Renren::make_album_path album['user_id'], album['album_id']
         local_file_names = (Dir.glob "#{album_path}/*").map do |file_name|
           File.basename file_name
         end
 
-        clear_print "  #{i} of #{albums_count} [Updating database] #{album['title']}"
+        clear_print "  #{i} of #{albums_count} (#{failure_count} failed) [Updating database] #{album['title']}"
 
         photos.each do |photo|
 
@@ -147,7 +158,7 @@ module Update
 
       end
 
-      clear_print "  #{photos_count} photos found\n"
+      clear_print "  #{photos_count} photos found. Failed to find photos for #{failure_count} albums.\n"
 
     end
 
