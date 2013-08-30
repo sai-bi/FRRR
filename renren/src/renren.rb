@@ -7,7 +7,7 @@ require 'json'
 require 'uri'
 
 module Renren
-  # All functions below are exposed
+
   module_function
 
   # Parse a cookie (as string) into a Ruby hash
@@ -99,7 +99,7 @@ module Renren
   # one included of course), which should be attempted in the same order
   def make_backup_urls url
     interchangeable_hosts = ['fmn.rrimg.com', 'fmn.rrfmn.com', 'fmn.xnpic.com']
-    uri = URI url
+    uri = URI.parse url
     if interchangeable_hosts.include? uri.host
       interchangeable_hosts.map do |host|
         uri.host = host
@@ -158,62 +158,4 @@ module Renren
     "#{make_album_path user_id, album_id}/photo-#{photo_id}.jpg"
   end
 
-  # The desired album must not be private.
-  def download_album cookie, user_id, album_id
-    album_path = make_album_path user_id, album_id
-    FileUtils.mkdir_p album_path
-
-    agent = Mechanize.new
-
-    photos = list_photos cookie, user_id, album_id
-    photos.each do |photo|
-      photo_id = photo[:id]
-      download_sucess = false
-
-      photo[:urls].each do |url|
-        retry_count_for_this_url = 0
-
-        begin
-          agent.download url, (make_photo_path user_id, album_id, photo_id)
-
-        rescue Mechanize::ResponseCodeError => e
-          if retry_count_for_this_url > 1
-            next
-          end
-          if e.response_code == 404
-            next
-          end
-          agent.shutdown
-          sleep 15 * 4**retry_count_for_this_url
-          agent = Mechanize.new
-          retry_count_for_this_url += 1
-          retry
-
-        rescue Mechanize::ResponseReadError, Net::HTTP::Persistent::Error
-          if retry_count_for_this_url > 1
-            next
-          end
-          agent.shutdown
-          sleep 15 * 4**retry_count_for_this_url
-          agent = Mechanize.new
-          retry_count_for_this_url += 1
-          retry
-
-        # Raise all exceptions within StandardError
-        rescue
-          STDERR.puts "Failed to download #{photo}"
-          raise
-
-        # Proceed to next photo if nothing bad happens
-        else
-          download_sucess = true
-          break
-        end
-      end
-
-      if !download_sucess
-        STDERR.puts "Failed to download #{photo}"
-      end
-    end
-  end
 end

@@ -10,6 +10,7 @@ log
 test
 renren/remote
 renren/src/download_albums.rb
+detect/haarcascades
 
 ### Haskell ###
 dist
