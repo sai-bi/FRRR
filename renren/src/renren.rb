@@ -5,7 +5,6 @@ require 'typhoeus'
 require 'nokogiri'
 require 'json'
 require 'uri'
-require 'mysql2'
 
 module Renren
   # All functions below are exposed
@@ -82,18 +81,16 @@ module Renren
 
   def list_albums cookie, user_id
     response = Typhoeus.get(
-      "http://photo.renren.com/photo/#{user_id}/album/relatives",
+      "http://photo.renren.com/photo/#{user_id}/album/relatives/ajax?offset=0&limit=#{2**31-1}",
       headers: (make_headers cookie)
     )
 
     doc = Nokogiri::HTML response.body
-    (doc.css 'div.album-list.othter-album-list a.album-title').map do |album|
+    (doc.css 'li a.album-title').map do |album|
       { user_id:  user_id,
         album_id: (album['href'].scan /\d+/)[1].to_i,
-        title:    (album.css 'span.album-name').text.strip,
-        # A <span> tag of class 'password' differentiates a private album
-        # from a public one. The latter does not have one.
-        private: !(album.css 'span.album-name span.password').empty?
+        title: (album.css 'span.album-name').text.strip,
+        private: !(album.css 'span.album-name i.privacy-icon.picon-password').empty?
       }
     end
   end
@@ -122,9 +119,6 @@ module Renren
 
     photo_list = (JSON.parse response.body)['photoList']
 
-    client = Mysql2::Client.new host:'localhost', username:'frrr'
-    client.query 'use renren'
-
     photo_list.inject([]) do |acc, photo|
       if photo['largeUrl'] == ''
         # Actually, this case has happened and caused Mechanize agent to crash.
@@ -141,18 +135,15 @@ module Renren
         photo_id = photo['photoId'].to_i
         caption  = photo['title'].strip
         time     = photo['time'].strip
-        urls     = (make_backup_urls photo['largeUrl']).strip
-
-        client.query "replace into "\
-                     "photos (user_id, album_id, photo_id, caption, url, cached_faces) "\
-                     "values (#{user_id}, #{album_id}, #{photo_id}, '#{client.escape caption}', '#{client.escape urls[0]}', '')"
+        #urls    = (make_backup_urls photo['largeUrl']).strip
+        url      = photo['largeUrl']
 
         acc << { user_id: user_id,
                  album_id: album_id,
                  photo_id: photo_id,
                  caption: caption,
                  time: time,
-                 urls: urls
+                 url: url
                }
 
       end
