@@ -96,7 +96,7 @@ module Update
       photos_count = 0
 
       clear_print '  Retrieving albums'
-      albums = conn.query 'select * from albums'
+      albums = conn.query 'select * from albums', cast_booleans: true
       albums_count = (conn.query 'select count(*) from albums').first['count(*)']
       failure_count = 0
       clear_print "  Retrieved #{albums_count} albums\n"
@@ -115,8 +115,11 @@ module Update
         #
         # Takeaway:
         # You should always explicitly compare a BOOl value from MySQL against 1.
+        #
+        # Exception:
+        # :cast_booleans option in mysql2 is on
 
-        next if album['private'] == 1
+        next if album['private']
 
         clear_print "  #{i} of #{albums_count} (#{failure_count} failed) [Fetching photos] #{album['title']}"
 

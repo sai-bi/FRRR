@@ -48,7 +48,8 @@ module Db::Renren
       "select downloaded from photos
       where user_id  = #{user_id}
       and   album_id = #{album_id}
-      and   photo_id = #{photo_id}").first['downloaded'] == 1
+      and   photo_id = #{photo_id}",
+      cast_booleans: true).first['downloaded']
   end
 
   def mark_photo_as_downloaded conn, user_id, album_id, photo_id
