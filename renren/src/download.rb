@@ -4,6 +4,7 @@ require 'fileutils'
 require 'mysql2'
 require 'mechanize'
 require_relative 'renren'
+require_relative 'db'
 
 def clear_print s
   print "\r\033[K"
@@ -15,44 +16,51 @@ module Download
   module_function
 
   def download conn, path
+
     clear_print "Downloading photos\n"
 
-    conn.query 'use renren'
     agent = Mechanize.new
 
-    clear_print '  Retrieving photos'
-
-    photos_count = (conn.query 'select count(*) from photos').first['count(*)']
+    photos_not_downloaded_count = Db::Renren::count_photos_not_downloaded conn
     success_count = 0
+    skip_count = 0
     failure_count = 0
 
-    clear_print "  Retrieved #{photos_count} photos\n"
-    photos_to_download = conn.query 'select * from photos where downloaded = false'
-    photos_to_download_count = (conn.query 'select count(*) from photos where downloaded = false').first['count(*)']
-    clear_print "  #{photos_to_download_count} to download\n"
+    clear_print '  Retrieving photos in local record'
+    clear_print "  Retrieved #{Db::Renren::count_photos conn} photos in local record\n"
+    clear_print "  #{photos_not_downloaded_count} to download\n"
 
     FileUtils.cd path do
 
-      photos_to_download.each_with_index do |photo, i|
-        clear_print "  #{i} of #{photos_to_download_count} (#{failure_count} failed) [Downloading] #{photo['url']}"
+      (Db::Renren::get_photos_not_downloaded conn).each_with_index do |photo, i|
+
+        if (Db::Renren::photo_has_been_downloaded conn, photo['user_id'], photo['album_id'], photo['photo_id'])
+          skip_count += 1
+          next
+        end
+
+        clear_print \
+          "  #{i} of #{photos_not_downloaded_count} "\
+          "(#{skip_count} skipped, #{failure_count} failed) "\
+          "[Downloading] #{photo['url']}"
+
         download_success = false
-        urls = Renren::make_backup_urls photo['url']
-        FileUtils.mkdir_p Renren::make_album_path photo['user_id'], photo['album_id']
-        urls.each do |url|
+        FileUtils.mkdir_p (Renren::make_album_path photo['user_id'], photo['album_id'])
+
+        (Renren::make_backup_urls photo['url']).each do |url|
           begin
             agent.download url, (Renren::make_photo_path photo['user_id'], photo['album_id'], photo['photo_id'])
           rescue Mechanize::ResponseCodeError, Mechanize::ResponseReadError, Net::HTTP::Persistent::Error
             next
           else
             download_success = true
-            conn.query \
-              "update photos set downloaded = true
-               where user_id = #{photo['user_id']} and album_id = #{photo['album_id']} and photo_id = #{photo['photo_id']}"
             break
           end
         end
+
         if download_success
           success_count += 1
+          Db::Renren::mark_photo_as_downloaded conn, photo['user_id'], photo['album_id'], photo['photo_id']
         else
           failure_count += 1
         end
@@ -60,7 +68,7 @@ module Download
 
     end
 
-    clear_print "  #{success_count} photos downloaded, #{failure_count} failed\n"
+    clear_print "  #{success_count} photos downloaded, #{skip_count} skipped, #{failure_count} failed\n"
 
   end
 end
