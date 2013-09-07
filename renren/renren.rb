@@ -132,7 +132,7 @@ module Renren
         request = Typhoeus::Request.new(
           "http://photo.renren.com/photo/#{user_id}/album/relatives/ajax",
           params: { 'offset' => 0, 'limit' => 2**31-1 },
-            headers: @headers
+          headers: @headers
         )
         request.on_complete do |response|
           if response.success?
@@ -163,7 +163,7 @@ module Renren
         request = Typhoeus::Request.new(
           "http://photo.renren.com/photo/#{user_id}/album-#{album_id}/bypage/ajax",
           params: { 'curPage' => 0, 'pagenum' => 2**31-1 },
-            headers: @headers
+          headers: @headers
         )
         request.on_complete do |response|
           if response.success?
@@ -239,11 +239,11 @@ module Renren
         request = Typhoeus::Request.new(
           "http://photo.renren.com/photo/#{user_id}/photo-#{photo_id}/ajax",
           method: :post,
-            headers: @headers,
-            body: { 'psource' => '0',
-                    'requestToken' => @request_token,
-                    '_rtk' => @rtk
-                  }
+          headers: @headers,
+          body: { 'psource' => '0',
+                  'requestToken' => @request_token,
+                  '_rtk' => @rtk
+                }
         )
         request.on_complete do |response|
           if response.success?
