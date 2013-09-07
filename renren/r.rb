@@ -43,7 +43,7 @@ module R
     def initialize
       @conn = Mysql2::Client.new host:'localhost', username:'frrr'
       @conn.query 'use renren'
-      @download_location = '/media/Passport/renren/photos'
+      @photo_path = '/media/Passport/renren/photos'
     end
 
     def get_users
@@ -179,7 +179,7 @@ module R
     end
 
     def save_photo photo, file
-      FileUtils.cd @download_location do
+      FileUtils.cd @photo_path do
         FileUtils.mkdir_p (self.class.make_album_path photo)
         File.open((self.class.make_photo_path photo), 'w') { |f| f.write file }
       end
