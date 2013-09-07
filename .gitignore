@@ -12,6 +12,9 @@ renren/remote
 detect/haarcascades
 .DS_Store
 renren.md
+*.html
+*.txt
+*.sql
 
 ### Haskell ###
 dist
