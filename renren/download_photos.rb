@@ -23,6 +23,6 @@ r  = R::R.new
 photos = []; count = 0
 r.get_photos_not_download do |photo|
   photos << photo; count += 1
-  batch_download_photos renren, r, photos, count if count >= 200
+  batch_download_photos renren, r, photos, count if count >= 1000
 end
 batch_download_photos renren, r, photos, count

@@ -144,19 +144,33 @@ module R
       @conn.query 'set foreign_key_checks=1'
     end
 
-    def put_photo photo
-      user_id    = photo[:user_id]
-      album_id   = photo[:album_id]
-      photo_id   = photo[:photo_id]
-      caption    = Mysql2::Client.escape photo[:caption]
-      url        = Mysql2::Client.escape photo[:url]
+    def exists_photo photo
+      user_id  = photo[:user_id]
+      album_id = photo[:album_id]
+      photo_id = photo[:photo_id]
 
-      @conn.query 'set foreign_key_checks=0'
-      @conn.query \
-        "replace into
-        photos (user_id, album_id, photo_id, caption, url)
-        values (#{user_id}, #{album_id}, #{photo_id}, '#{caption}', '#{url}')"
-      @conn.query 'set foreign_key_checks=1'
+      (@conn.query \
+        "select exists (
+          select * from photos
+          where user_id = #{user_id}
+          and album_id = #{album_id}
+          and photo_id = #{photo_id}
+        )").first.values.first == 1
+    end
+
+    def put_photo photo
+      user_id  = photo[:user_id]
+      album_id = photo[:album_id]
+      photo_id = photo[:photo_id]
+      caption  = Mysql2::Client.escape photo[:caption]
+      url      = Mysql2::Client.escape photo[:url]
+
+      if !exists_photo photo
+        @conn.query \
+          "replace into
+          photos (user_id, album_id, photo_id, caption, url)
+          values (#{user_id}, #{album_id}, #{photo_id}, '#{caption}', '#{url}')"
+      end
     end
 
     def put_tag tag
