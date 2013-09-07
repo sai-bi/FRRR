@@ -1,15 +1,15 @@
 ### General ###
-tmp
-log
+tmp/
+log/
 *.swp
 *.swo
 *.log
 
 ### Project-specific ###
-assets
-test
-renren/remote
-detect/haarcascades
+assets/
+test/
+renren/remote/
+detect/haarcascades/
 .DS_Store
 renren.md
 *.html
@@ -17,9 +17,10 @@ renren.md
 *.sql
 
 ### Haskell ###
-dist
+dist/
 *.hi
 *.o
 
 ### Python ###
+build/
 *.pyc

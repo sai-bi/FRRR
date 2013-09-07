@@ -18,6 +18,6 @@ r  = R::R.new
 albums = []; count = 0
 r.get_albums do |album|
   albums << album; count += 1
-  batch_update_photos renren, r, albums, count if count >= 1000
+  batch_update_photos renren, r, albums, count if count >= 200
 end
 batch_update_photos renren, r, albums, count

@@ -9,7 +9,6 @@ module R
   # This is one of the most vulnerable and yet critical part.
   # Therefore, design the interfaces to be as narrow and dedicated as possible.
 
-
   # Caution --------------------------------------------------------------
   #
   # A `false` of MySQL type BOOL has value 0 and it is casted into Ruby
@@ -27,23 +26,27 @@ module R
   # :cast_booleans option in mysql2 is on
 
   class R
-    def self.make_album_path album
-      user_id  = album[:user_id]
-      album_id = album[:album_id]
-      "user-#{user_id}/album-#{album_id}"
-    end
-
-    def self.make_photo_path photo
+    def self.relative_photo_path photo
       user_id  = photo[:user_id]
       album_id = photo[:album_id]
       photo_id = photo[:photo_id]
-      "user-#{user_id}/album-#{album_id}/photo-#{photo_id}.jpg"
+      "photos/user-#{user_id}/album-#{album_id}/photo-#{photo_id}.jpg"
+    end
+
+    def self.relative_tag_path tag
+      target_id = tag[:target_id]
+      tag_id    = tag[:tag_id]
+      "tags/target-#{target_id}/tag-#{tag_id}.jpg"
     end
 
     def initialize
       @conn = Mysql2::Client.new host:'localhost', username:'frrr'
       @conn.query 'use renren'
-      @photo_path = '/media/Passport/renren/photos'
+      @base_dir = '/media/Passport/renren'
+    end
+
+    def absolute_photo_path photo
+      @base_dir + '/' + (self.class.relative_photo_path photo)
     end
 
     def get_users
@@ -192,10 +195,19 @@ module R
       @conn.query 'set foreign_key_checks=1'
     end
 
-    def save_photo photo, file
-      FileUtils.cd @photo_path do
-        FileUtils.mkdir_p (self.class.make_album_path photo)
-        File.open((self.class.make_photo_path photo), 'w') { |f| f.write file }
+    def save_photo photo, data
+      FileUtils.cd @base_dir do
+        photo_path = self.class.relative_photo_path photo
+        FileUtils.mkdir_p (File.dirname photo_path)
+        File.open(photo_path, 'w') { |f| f.write data }
+      end
+    end
+
+    def save_tag tag, image
+      FileUtils.cd @base_dir do
+        tag_path = self.class.relative_tag_path tag
+        FileUtils.mkdir_p (File.dirname tag_path)
+        image.write tag_path
       end
     end
   end
