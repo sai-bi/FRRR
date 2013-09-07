@@ -127,7 +127,7 @@ module R
         "replace into
         users  (user_id, name, network)
         values (#{user_id}, '#{name}', '#{network}')"
-        @conn.query 'set foreign_key_checks=1'
+      @conn.query 'set foreign_key_checks=1'
     end
 
     def put_album album
@@ -141,7 +141,7 @@ module R
         "replace into
         albums (user_id, album_id, title, private)
         values (#{user_id}, #{album_id}, '#{title}', #{private_})"
-        @conn.query 'set foreign_key_checks=1'
+      @conn.query 'set foreign_key_checks=1'
     end
 
     def put_photo photo
@@ -156,7 +156,7 @@ module R
         "replace into
         photos (user_id, album_id, photo_id, caption, url)
         values (#{user_id}, #{album_id}, #{photo_id}, '#{caption}', '#{url}')"
-        @conn.query 'set foreign_key_checks=1'
+      @conn.query 'set foreign_key_checks=1'
     end
 
     def put_tag tag
@@ -175,7 +175,7 @@ module R
         "replace into
         tags (owner_id, album_id, photo_id, tag_id, target_id, x, y, width, height)
         values (#{owner_id}, #{album_id}, #{photo_id}, #{tag_id}, #{target_id}, #{x}, #{y}, #{width}, #{height})"
-        @conn.query 'set foreign_key_checks=1'
+      @conn.query 'set foreign_key_checks=1'
     end
 
     def save_photo photo, file
