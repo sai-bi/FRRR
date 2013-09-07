@@ -2,6 +2,7 @@
 tmp
 log
 *.swp
+*.swo
 *.log
 
 ### Project-specific ###
