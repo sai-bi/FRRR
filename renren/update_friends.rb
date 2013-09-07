@@ -6,7 +6,7 @@ cookie = gets
 renren = Renren::Renren.new cookie
 r  = R::R.new
 
-renren.get_friends([renren.me]) do |friend|
+renren.get_friends [renren.me] do |friend|
   puts friend
   r.put_user friend
 end

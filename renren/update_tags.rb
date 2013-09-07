@@ -4,7 +4,7 @@ require_relative 'renren'
 require_relative 'r'
 
 def batch_update_tags renren, r, photos, count
-  renren.get_tags(photos) do |tag|
+  renren.get_tags photos do |tag|
     puts tag
     r.put_tag tag
   end

@@ -4,7 +4,7 @@ require_relative 'renren'
 require_relative 'r'
 
 def batch_update_photos renren, r, albums, count
-  renren.get_photos(albums) do |photo|
+  renren.get_photos albums do |photo|
     puts photo
     r.put_photo photo
   end
