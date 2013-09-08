@@ -120,31 +120,26 @@ module R
         and photo_id = #{photo_id}"
     end
 
-    def put_user user
-      user_id = user[:user_id]
-      name    = Mysql2::Client.escape user[:name]
-      network = Mysql2::Client.escape user[:network]
+    def exists_user user
+      user_id  = user[:user_id]
 
-      @conn.query 'set foreign_key_checks=0'
-      @conn.query \
-        "replace into
-        users  (user_id, name, network)
-        values (#{user_id}, '#{name}', '#{network}')"
-      @conn.query 'set foreign_key_checks=1'
+      (@conn.query \
+        "select exists (
+          select * from users
+          where user_id = #{user_id}
+        )").first.values.first == 1
     end
 
-    def put_album album
+    def exists_album album
       user_id  = album[:user_id]
       album_id = album[:album_id]
-      title    = Mysql2::Client.escape album[:title]
-      private_ = album[:private]
 
-      @conn.query 'set foreign_key_checks=0'
-      @conn.query \
-        "replace into
-        albums (user_id, album_id, title, private)
-        values (#{user_id}, #{album_id}, '#{title}', #{private_})"
-      @conn.query 'set foreign_key_checks=1'
+      (@conn.query \
+        "select exists (
+          select * from albums
+          where user_id = #{user_id}
+          and album_id = #{album_id}
+        )").first.values.first == 1
     end
 
     def exists_photo photo
@@ -159,6 +154,33 @@ module R
           and album_id = #{album_id}
           and photo_id = #{photo_id}
         )").first.values.first == 1
+    end
+
+    def put_user user
+      user_id = user[:user_id]
+      name    = Mysql2::Client.escape user[:name]
+      network = Mysql2::Client.escape user[:network]
+
+      if !exists_user user
+        @conn.query \
+          "replace into
+          users  (user_id, name, network)
+          values (#{user_id}, '#{name}', '#{network}')"
+      end
+    end
+
+    def put_album album
+      user_id  = album[:user_id]
+      album_id = album[:album_id]
+      title    = Mysql2::Client.escape album[:title]
+      private_ = album[:private]
+
+      if !exists_album album
+        @conn.query \
+          "replace into
+          albums (user_id, album_id, title, private)
+          values (#{user_id}, #{album_id}, '#{title}', #{private_})"
+      end
     end
 
     def put_photo photo
