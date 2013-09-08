@@ -8,7 +8,6 @@ def batch_update_albums renren, r, users, count
     puts album
     r.put_album album
   end
-  users = []; count = 0
 end
 
 cookie = gets
@@ -18,6 +17,9 @@ r  = R::R.new
 users = []; count = 0
 r.get_users do |user|
   users << user; count += 1
-  batch_update_albums renren, r, users, count if count >= 200
+  if count >= 200
+    batch_update_albums renren, r, users, count
+    users = []; count = 0
+  end
 end
 batch_update_albums renren, r, users, count

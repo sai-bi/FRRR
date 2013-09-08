@@ -8,7 +8,6 @@ def batch_update_tags renren, r, photos, count
     puts tag
     r.put_tag tag
   end
-  photos = []; count = 0
 end
 
 cookie = gets
@@ -18,6 +17,9 @@ r  = R::R.new
 photos = []; count = 0
 r.get_photos do |photo|
   photos << photo; count += 1
-  batch_update_tags renren, r, photos, count if count >= 200
+  if count >= 200
+    batch_update_tags renren, r, photos, count
+    photos = []; count = 0
+  end
 end
 batch_update_tags renren, r, photos, count
