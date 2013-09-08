@@ -138,6 +138,8 @@ module Renren
           if response.success?
             doc = Nokogiri::HTML response.body
             albums = doc.css 'li a.album-title'
+            # In case we don't have permission to visit the page and is
+            # redirected, albums will be [], which is fine.
             albums.each do |album|
               album =
                 { user_id:  user_id,

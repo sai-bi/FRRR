@@ -156,12 +156,22 @@ module R
         )").first.values.first == 1
     end
 
-    def put_user user
-      user_id = user[:user_id]
-      name    = Mysql2::Client.escape user[:name]
-      network = Mysql2::Client.escape user[:network]
+    def exists_tag tag
+      tag_id  = tag[:tag_id]
 
+      (@conn.query \
+        "select exists (
+          select * from tags
+          where tag_id = #{tag_id}
+        )").first.values.first == 1
+    end
+
+    def put_user user
       if !exists_user user
+        user_id = user[:user_id]
+        name    = Mysql2::Client.escape user[:name]
+        network = Mysql2::Client.escape user[:network]
+
         @conn.query \
           "replace into
           users  (user_id, name, network)
@@ -170,12 +180,12 @@ module R
     end
 
     def put_album album
-      user_id  = album[:user_id]
-      album_id = album[:album_id]
-      title    = Mysql2::Client.escape album[:title]
-      private_ = album[:private]
-
       if !exists_album album
+        user_id  = album[:user_id]
+        album_id = album[:album_id]
+        title    = Mysql2::Client.escape album[:title]
+        private_ = album[:private]
+
         @conn.query \
           "replace into
           albums (user_id, album_id, title, private)
@@ -184,13 +194,13 @@ module R
     end
 
     def put_photo photo
-      user_id  = photo[:user_id]
-      album_id = photo[:album_id]
-      photo_id = photo[:photo_id]
-      caption  = Mysql2::Client.escape photo[:caption]
-      url      = Mysql2::Client.escape photo[:url]
-
       if !exists_photo photo
+        user_id  = photo[:user_id]
+        album_id = photo[:album_id]
+        photo_id = photo[:photo_id]
+        caption  = Mysql2::Client.escape photo[:caption]
+        url      = Mysql2::Client.escape photo[:url]
+
         @conn.query \
           "replace into
           photos (user_id, album_id, photo_id, caption, url)
@@ -199,22 +209,22 @@ module R
     end
 
     def put_tag tag
-      owner_id  = tag[:owner_id]
-      album_id  = tag[:album_id]
-      photo_id  = tag[:photo_id]
-      tag_id    = tag[:tag_id]
-      target_id = tag[:target_id]
-      x         = tag[:x]
-      y         = tag[:y]
-      width     = tag[:width]
-      height    = tag[:height]
+      if !exists_tag tag
+        owner_id  = tag[:owner_id]
+        album_id  = tag[:album_id]
+        photo_id  = tag[:photo_id]
+        tag_id    = tag[:tag_id]
+        target_id = tag[:target_id]
+        x         = tag[:x]
+        y         = tag[:y]
+        width     = tag[:width]
+        height    = tag[:height]
 
-      @conn.query 'set foreign_key_checks=0'
-      @conn.query \
-        "replace into
-        tags (owner_id, album_id, photo_id, tag_id, target_id, x, y, width, height)
-        values (#{owner_id}, #{album_id}, #{photo_id}, #{tag_id}, #{target_id}, #{x}, #{y}, #{width}, #{height})"
-      @conn.query 'set foreign_key_checks=1'
+        @conn.query \
+          "replace into
+          tags (owner_id, album_id, photo_id, tag_id, target_id, x, y, width, height)
+          values (#{owner_id}, #{album_id}, #{photo_id}, #{tag_id}, #{target_id}, #{x}, #{y}, #{width}, #{height})"
+      end
     end
 
     def save_photo photo, data
