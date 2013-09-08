@@ -5,7 +5,7 @@ require_relative 'r'
 
 def batch_update_albums renren, r, users, count
   renren.get_albums(users) do |album|
-    puts album
+    puts "#{album[:user_id]} #{album[:album_id]} #{album[:title]}"
     r.put_album album
   end
 end
